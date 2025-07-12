@@ -15,8 +15,8 @@ import SwiftUI
 /// func getLogin(_ userLogin: UserProtocol) async -> String?
 ///	```
 protocol NetworkManagementProtocol {
-	func getAllUsers() async
-	func setNewUser(userCreate: [String: String]) async -> Bool
+	func searchAllUsers() async
+	func setNewUser(userCreate: [String: String]) async -> Data?
 	func getLogin(userLogin: [String: String]) async -> String?
 }
 
@@ -29,7 +29,7 @@ public class NetworkManagementUser: NetworkManagementProtocol {
 	// MARK: - ATRIBUTOS
 	
 	/// Usuarios obtenidos
-	var users: [UserResponse] = []
+	private var users: [UserResponse] = []
 	
 	/// Errores en el acceso a los datos
 	public var networkError: String? = nil
@@ -39,7 +39,7 @@ public class NetworkManagementUser: NetworkManagementProtocol {
 	// MARK: - METODOS O FUNCIONES
 	
 	/// Obtenemos todos los usuarios
-	public func getAllUsers() async {
+	public func searchAllUsers() async {
 		await allUsers()
 	}
 	
@@ -66,8 +66,8 @@ public class NetworkManagementUser: NetworkManagementProtocol {
 	/// - Parameter userCreate: Recibe un diccionario  [String: String], compueste de  email y passwsord
 	/// - Returns: Devuelve TRUE o FALSE
 	//
-	public func setNewUser(userCreate: [String: String]) async -> Bool {
-		guard let userCreateClean = cleanUserCredentials(userCreate) else { return false }
+	public func setNewUser(userCreate: [String: String]) async -> Data? {
+		guard let userCreateClean = cleanUserCredentials(userCreate) else { return nil }
 		return await newUser(userCreate: User(email: userCreateClean["email"]!, password: userCreateClean["password"]!))
 	}
 	
@@ -112,6 +112,7 @@ extension NetworkManagementUser {
 extension NetworkManagementUser {
 
 	/// Get all users
+	/// Obtenemos  los usuaarios
 	private func allUsers() async {
 		do {
 			self.users = try await userUseCase.allUsers(descriptionRoutes: .users)
@@ -124,18 +125,29 @@ extension NetworkManagementUser {
 	}
 	
 	/// New User
-	private func newUser(userCreate: UserProtocol) async -> Bool {
+	private func newUser(userCreate: UserProtocol) async -> Data? {
 		do {
 			let user = try await userUseCase.newUser(userCreate: createdJson(userCreate), descriptionRoutes: .register)
 			self.networkError = nil
 			await allUsers()
-			return user?.isActive ?? false
+			return encodeNewUser(user!)
 		} catch let error as NetworkErrorResponse {
 			self.networkError = error.description
 		} catch {
 			self.networkError = "Unknown error \(error)"
 		}
-		return false
+		return nil
+	}
+	
+	private func encodeNewUser(_ user: UserResponse) -> Data? {
+		let encoder = JSONEncoder()
+		encoder.outputFormatting = .prettyPrinted
+		do {
+			return try encoder.encode(user)
+		} catch {
+			print("Error al codificar JSON: \(error)")
+		}
+		return nil
 	}
 	
 	/// Login User
@@ -144,14 +156,13 @@ extension NetworkManagementUser {
 		do {
 			let user = try await userUseCase.loginUser(userLogin: createdParameters(userLogin), descriptionRoutes: .login)
 			self.networkError = nil
-			await allUsers()
 			return user?.token
 		} catch let error as NetworkErrorResponse {
 			self.networkError = error.description
 		} catch {
 			self.networkError = "Unknown error \(error)"
 		}
-		return "ERROR TOKEN"
+		return nil
 	}
 }
 

@@ -8,6 +8,7 @@
 import Foundation
 
 final class UserUseCase: NetworkRequestProtocol, UserUseCaseProtocol, Sendable {
+	
 	/// Protocolo de acceso a internet ``HttpProtocol``
 	var httpProtocol: HttpProtocol  {
 		return currentEnvironment.httpProtocol
