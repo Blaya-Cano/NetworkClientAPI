@@ -10,13 +10,14 @@ import Foundation
 struct UserResponse: Decodable, Identifiable, Encodable {
     let id: Int
     let email: String
+	let uuid: String
     let isActive: Bool
     let role: String
     let createdAt: String
     
     private enum CodingKeys: String, CodingKey {
         case id
-        case email, role
+        case email, role, uuid
         case isActive = "is_active"
         case createdAt = "created_at"
     }

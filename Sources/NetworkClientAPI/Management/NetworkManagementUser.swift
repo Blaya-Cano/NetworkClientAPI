@@ -143,7 +143,9 @@ extension NetworkManagementUser {
 		let encoder = JSONEncoder()
 		encoder.outputFormatting = .prettyPrinted
 		do {
-			return try encoder.encode(user)
+			let data = try encoder.encode(user)
+			dump(data)
+			return data
 		} catch {
 			print("Error al codificar JSON: \(error)")
 		}
